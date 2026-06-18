@@ -124,7 +124,11 @@ class GroupByMemoryMergedResultTest {
                 .databaseType(databaseType)
                 .projections(projectionsSegment)
                 .groupBy(new GroupBySegment(0, 0, Collections.singletonList(new IndexOrderByItemSegment(0, 0, 3, OrderDirection.ASC, NullsOrderType.FIRST))))
-                .orderBy(new OrderBySegment(0, 0, Collections.singletonList(new IndexOrderByItemSegment(0, 0, 3, OrderDirection.DESC, NullsOrderType.FIRST))))
+                // Group by and order by reference different item lists (sizes differ), so the memory merge path is exercised.
+                // The primary order by item still sorts by column 3 desc, keeping the asserted row order unchanged.
+                .orderBy(new OrderBySegment(0, 0, Arrays.asList(
+                        new IndexOrderByItemSegment(0, 0, 3, OrderDirection.DESC, NullsOrderType.FIRST),
+                        new IndexOrderByItemSegment(0, 0, 1, OrderDirection.ASC, NullsOrderType.FIRST))))
                 .build();
         ShardingSphereDatabase database = mock(ShardingSphereDatabase.class, RETURNS_DEEP_STUBS);
         when(database.getName()).thenReturn("foo_db");

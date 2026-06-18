@@ -73,6 +73,7 @@ import org.apache.shardingsphere.sql.parser.statement.core.value.identifier.Iden
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -358,10 +359,24 @@ public final class SelectStatementBaseContext implements SQLStatementContext {
     /**
      * Judge group by and order by sequence is same or not.
      *
+     * <p>Only the column sequence is compared; sort direction is intentionally ignored. By SQL semantics group by has no
+     * direction, so when order by references the same column sequence the grouping keys are still contiguous and streaming
+     * group merge stays valid regardless of asc/desc. The direction is honored later by the merge comparator.</p>
+     *
      * @return group by and order by sequence is same or not
      */
     public boolean isSameGroupByAndOrderByItems() {
-        return !groupByContext.getItems().isEmpty() && groupByContext.getItems().equals(orderByContext.getItems());
+        if (groupByContext.getItems().isEmpty() || groupByContext.getItems().size() != orderByContext.getItems().size()) {
+            return false;
+        }
+        Iterator<OrderByItem> groupByItems = groupByContext.getItems().iterator();
+        Iterator<OrderByItem> orderByItems = orderByContext.getItems().iterator();
+        while (groupByItems.hasNext()) {
+            if (groupByItems.next().getIndex() != orderByItems.next().getIndex()) {
+                return false;
+            }
+        }
+        return true;
     }
     
     /**
